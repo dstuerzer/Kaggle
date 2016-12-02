@@ -19,7 +19,6 @@ df =pd.read_csv(abs_file_path)
 
 df.loc[df.Sex == 'male', 'Sex'] = 1
 df.loc[df.Sex == 'female', 'Sex'] = 0
-df.Age.fillna(-1, inplace = True)
 df.loc[df.Embarked == 'C', 'Embarked'] = 0
 df.loc[df.Embarked == 'Q', 'Embarked'] = 1
 df.loc[df.Embarked == 'S', 'Embarked'] = 2
@@ -73,19 +72,19 @@ X=scaler.transform(X)
 # SVM
 #################
 mittel = 0
-for g in np.arange(0.002,0.02, 0.001):
-	for eC in [np.power(2.,k) for k in np.arange(-4,6)]:
+for g in np.arange(0.002,0.01, 0.001):
+	for eC in [np.power(2.,k) for k in np.arange(-5,7)]:
 		my_svm = svm.SVC(kernel='rbf', C=eC, gamma = g)
 		my_svm.fit(X, y)
 		sc = cross_val_score(my_svm, X, y, cv=5)
-		if (np.mean(sc)/my_svm.score(X,y) > 0.95) and (np.mean(sc)/my_svm.score(X,y) <1.05) and (np.mean(sc)>0.77):
+		if (np.mean(sc)/my_svm.score(X,y) > 0.95) and (np.mean(sc)/my_svm.score(X,y) <1.05) and (np.mean(sc)>0.7):
 			if np.mean(sc) > mittel:
 				mittel = np.mean(sc)
 				cc = eC
 				gg =g
 
-			print("mu={}, std={},c={}, gama={}".format(np.mean(sc), np.std(sc),eC, g ))
-			# print('             E_in = {}'.format(my_svm.score(X,y)))
+				print("    mu={}, std={},c={}, gama={}".format(np.mean(sc), np.std(sc),eC, g ))
+				print('E_in = {}'.format(my_svm.score(X,y)))
 		# print("gamma={}".format(g))
 
 print(cc, gg)
