@@ -6,7 +6,7 @@ import os
 from sklearn import svm, preprocessing
 from sklearn.model_selection import cross_val_score
 import csv
-from sklearn.neural_network import MLPClassifier
+from sklearn.neural_network import MLPClassifier, MLPRegressor
 
 
 ########################
@@ -39,7 +39,7 @@ del df['PassengerId']
 
 
 #############
-# svr to predict missing ages
+#  predict missing ages
 ###################
 
 
@@ -50,7 +50,8 @@ X_train_age = df_train_age.as_matrix()
 scaler_age = preprocessing.StandardScaler().fit(X_train_age)
 X_train_age = scaler_age.transform(X_train_age)
 
-svr_age = svm.SVR(kernel='rbf')
+
+svr_age = MLPRegressor(solver='lbfgs', alpha=1e-5, hidden_layer_sizes=(5,5))
 svr_age.fit(X_train_age, y_age_tr)
 df_age_nan = df[pd.isnull(df['Age'])]
 del df_age_nan['Age']
@@ -75,7 +76,7 @@ X_train_embarked=df_train_embarked.as_matrix()
 scaler_embarked = preprocessing.StandardScaler().fit(X_train_embarked)
 X_train_embarked=scaler_embarked.transform(X_train_embarked)
 
-svm_embark = svm.SVC(kernel='rbf')
+svm_embark = MLPRegressor(solver='lbfgs', alpha=1e-5, hidden_layer_sizes=(5,5))
 svm_embark.fit(X_train_embarked, y_train_embarked)
 dfe = df[pd.isnull(df['Embarked'])]
 del dfe['Embarked']
@@ -105,7 +106,7 @@ df_prp=df.loc[:, ['Pclass', 'Sex', 'Fare', 'Embarked', 'FamilyMembers']]
 X_prp = df_prp.as_matrix()
 scaler_prp = preprocessing.StandardScaler().fit(X_prp)	# <<<<<
 X_prp = scaler_prp.transform(X_prp)
-svr_prp = svm.SVR(kernel='rbf')
+svr_prp = MLPRegressor(solver='lbfgs', alpha=1e-5, hidden_layer_sizes=(5,5))
 svr_prp.fit(X_prp, y_prp)	# <<<<<
 
 
@@ -114,7 +115,7 @@ df_prp2=df.loc[:, ['Pclass', 'Sex', 'Age', 'Embarked', 'FamilyMembers']]
 X_prp2 = df_prp2.as_matrix()
 scaler_prp2 = preprocessing.StandardScaler().fit(X_prp2)	# <<<<<
 X_prp2 = scaler_prp2.transform(X_prp2)
-svr_prp2 = svm.SVR(kernel='rbf')
+svr_prp2 = MLPRegressor(solver='lbfgs', alpha=1e-5, hidden_layer_sizes=(5,5))
 svr_prp2.fit(X_prp2, y_prp2)	# <<<<<
 
 
@@ -180,30 +181,6 @@ del X, y
 
 
 
-
-
-
-
-
-
-
-
-
-# for g in np.arange(0.001, 0.1, 0.005):
-# 	for eC in [np.power(2.,k) for k in np.arange(-5,5)]:
-
-# 		my_svm = svm.SVC(kernel='rbf', C=eC, gamma = g)
-# 		my_svm.fit(X_train, y_train)
-# 		sc = cross_val_score(my_svm, X_train, y_train, cv=5)
-# 		if (np.mean(sc)/my_svm.score(X_train, y_train) > 0.95) and (np.mean(sc)/my_svm.score(X_train, y_train) <1.05) and (np.mean(sc)>0.75):
-# 			if np.mean(sc) > mittel:
-# 				mittel = np.mean(sc)
-# 				cc = eC
-# 				gg =g
-# 				print("    mu={}, std={},c={}, gama={}".format(np.mean(sc), np.std(sc),eC, g ))
-# 				print('E_in = {}'.format(my_svm.score(X_train, y_train)))
-
-# print(cc, gg)
 ee = MLPClassifier(solver='lbfgs', alpha=1e-5, hidden_layer_sizes=(5,5))
 ee.fit(X_train, y_train)
 X_test = scaler.transform(X_test)
