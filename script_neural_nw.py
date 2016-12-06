@@ -51,7 +51,7 @@ scaler_age = preprocessing.StandardScaler().fit(X_train_age)
 X_train_age = scaler_age.transform(X_train_age)
 
 
-svr_age = MLPRegressor(solver='lbfgs', alpha=1e-5, hidden_layer_sizes=(5,5))
+svr_age = MLPRegressor(solver='lbfgs', alpha=1e-5, hidden_layer_sizes=(4,2))
 svr_age.fit(X_train_age, y_age_tr)
 df_age_nan = df[pd.isnull(df['Age'])]
 del df_age_nan['Age']
@@ -76,7 +76,7 @@ X_train_embarked=df_train_embarked.as_matrix()
 scaler_embarked = preprocessing.StandardScaler().fit(X_train_embarked)
 X_train_embarked=scaler_embarked.transform(X_train_embarked)
 
-svm_embark = MLPRegressor(solver='lbfgs', alpha=1e-5, hidden_layer_sizes=(5,5))
+svm_embark = MLPRegressor(solver='lbfgs', alpha=1e-5, hidden_layer_sizes=(4,2))
 svm_embark.fit(X_train_embarked, y_train_embarked)
 dfe = df[pd.isnull(df['Embarked'])]
 del dfe['Embarked']
@@ -106,7 +106,7 @@ df_prp=df.loc[:, ['Pclass', 'Sex', 'Fare', 'Embarked', 'FamilyMembers']]
 X_prp = df_prp.as_matrix()
 scaler_prp = preprocessing.StandardScaler().fit(X_prp)	# <<<<<
 X_prp = scaler_prp.transform(X_prp)
-svr_prp = MLPRegressor(solver='lbfgs', alpha=1e-5, hidden_layer_sizes=(5,5))
+svr_prp = MLPRegressor(solver='lbfgs', alpha=1e-5, hidden_layer_sizes=(4,2))
 svr_prp.fit(X_prp, y_prp)	# <<<<<
 
 
@@ -115,7 +115,7 @@ df_prp2=df.loc[:, ['Pclass', 'Sex', 'Age', 'Embarked', 'FamilyMembers']]
 X_prp2 = df_prp2.as_matrix()
 scaler_prp2 = preprocessing.StandardScaler().fit(X_prp2)	# <<<<<
 X_prp2 = scaler_prp2.transform(X_prp2)
-svr_prp2 = MLPRegressor(solver='lbfgs', alpha=1e-5, hidden_layer_sizes=(5,5))
+svr_prp2 = MLPRegressor(solver='lbfgs', alpha=1e-5, hidden_layer_sizes=(4,2))
 svr_prp2.fit(X_prp2, y_prp2)	# <<<<<
 
 
@@ -181,7 +181,7 @@ del X, y
 
 
 
-ee = MLPClassifier(solver='lbfgs', alpha=1e-5, hidden_layer_sizes=(5,5))
+ee = MLPClassifier(solver='lbfgs', alpha=1e-5, hidden_layer_sizes=(4,2))
 ee.fit(X_train, y_train)
 X_test = scaler.transform(X_test)
 y_pred = ee.predict(X_test)
