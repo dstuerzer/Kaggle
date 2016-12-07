@@ -7,56 +7,68 @@ import os
 from sklearn.decomposition import PCA
 from sklearn import svm, preprocessing, tree
 from sklearn.model_selection import cross_val_score
-from sklearn.ensemble import ExtraTreesClassifier, ExtraTreesRegressor,RandomForestClassifier
+from sklearn.ensemble import RandomForestClassifier
 import csv
 import matplotlib.colors as colors
 from sklearn.neural_network import MLPClassifier, MLPRegressor
-from sklearn.feature_selection import RFECV
+from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
 
-name_train = "train.csv"
+name_train = "train_medium.csv"
 name_test = "test.csv"
-output_name = 'sol_0.csv'
+output_name = 'sol.csv'
 
 n_pca = 50		# 50 seems optimal
 			# compression method:
-use_pca = 1		# 0... rfc for reduction, 
+use_pca = 2		# 0... rfc for reduction, 
 				# 1... pca + whitening 
-				# 2... for scaling without pca
-name_estimator = "NEURAL_NW"
-par_estimator = 200
+				# 2... for linear discriminant analysis dim red
+name_estimator = "SUPP_VM_rbf"
+par_estimator = 0.027
 
-# only for <rfc for reduction>:
-par_rcf_reducer = 100	# only needed if use_pca = 0
-epsilon = 0.002		#cutoff in <rfc for reduction>
-
-
+def LDA(X, y, r):
+	tri = LinearDiscriminantAnalysis()
+	sc = cross_val_score(tri , X, y, cv=5)
+	tri.fit(X, y)
+	print('CV', np.mean(sc),tri.score(X,y))
+	# G=tri.feature_importances_
+	return np.mean(sc), tri
 
 def RFC_f(X, y, r):
 	tri = RandomForestClassifier(r)
 	sc = cross_val_score(tri , X, y, cv=5)
 	tri.fit(X, y)
 	print('CV', np.mean(sc),tri.score(X,y))
-	G=tri.feature_importances_
-	return G, tri
+	# G=tri.feature_importances_
+	return np.mean(sc), tri
 
-def SUPP_VM_rbf(X,y,c):
-	g = 0.02
+def SUPP_VM_rbf(X,y,g):
+	c = 20
+	g = 0.027
 	SVM = svm.SVC(kernel='rbf', C=c, gamma = g)
 	sc = cross_val_score(SVM, X, y, cv=5)
 	SVM.fit(X, y)
 	print(np.mean(sc), SVM.score(X,y))
-	return SVM
+	return np.mean(sc), SVM
+
+def SUPP_VM_linear(X,y,c):
+	SVM = svm.SVC(kernel='linear', C=np.power(10.,-0.8))
+	sc = cross_val_score(SVM, X, y, cv=5)
+	SVM.fit(X, y)
+	print(np.mean(sc), SVM.score(X,y))
+	return np.mean(sc), SVM
 
 def NEURAL_NW(X,y, c):
-	lay_size = (c,)
+	lay_size = (1000,)
 	nnw=MLPClassifier(solver='lbfgs', alpha=1e-5, hidden_layer_sizes=lay_size)
 	sc = cross_val_score(nnw, X, y, cv=5)
 	nnw.fit(X, y)
 	print('CV', np.mean(sc), nnw.score(X,y))	
-	return nnw
+	return np.mean(sc), nnw
 
 def check_manually(X_test, y_pred):
-	for i in range(100):
+
+	for jj in range(100):
+		i = random.choice(range(len(y_pred)))
 		print("pred", y_pred[i])
 		visualize_image(X_test[i])
 
@@ -97,36 +109,32 @@ X_test = df_test.values.tolist()
 print(len(y))
 
 
-if use_pca == 0:
-# use rfc to reduce data dimension
-	G, estimator = RFC_f(X, y, par_rcf_reducer)
-	index_G = [i for i in range(len(G)) if G[i] > epsilon]
-	print("length index_G", len(index_G))
-	X_cpr = []
-	for x in X:
-		X_cpr.append([x[i] for i in index_G])
-	scaler = preprocessing.StandardScaler().fit(X_cpr)
-	X = scaler.transform(X_cpr)
-	X_cpr_test = []
-	for x in X_test:
-		X_cpr_test.append([x[i] for i in index_G])
-	X_test_pca = scaler.transform(X_cpr_test)
-elif use_pca == 1:
+if use_pca == 1:
 	pca = PCA(n_components=n_pca, whiten = True)
 	pca.fit(X)
 	X = pca.transform(X)
 	X_test_pca = pca.transform(X_test)
 else:
+	redux = LinearDiscriminantAnalysis( n_components=20)
+	redux.fit(X, y)
+	X = redux.transform(X)
+	X_test = redux.transform(X_test)
+	print(len(X[3]))
 	scaler = preprocessing.StandardScaler().fit(X)
 	X = scaler.transform(X)
 	X_test_pca = scaler.transform(X_test)
 
+# temporary loop
+# par_x = np.arange(10, 100, 10)
+# e_y = []
+# for par_estimator in par_x:
+E_cv, estimator = globals()[name_estimator](X, y, par_estimator)
+	# e_y.append(E_cv)
 
-for r in [50,100,200,400,600,1000]:
-	if name_estimator != "RFC_f":
-		estimator = globals()[name_estimator](X, y, par_estimator)
-	else:
-		G, estimator = RFC_f(X,y, par_estimator)
+# plt.plot(par_x, [np.log(1-p)/np.log(10) for p in e_y])	
+# plt.show()
+
+
 y_pred = estimator.predict(X_test_pca)
 
 daten = {'ImageId': [i+1 for i in range(len(y_pred))] , 'Label': y_pred}
