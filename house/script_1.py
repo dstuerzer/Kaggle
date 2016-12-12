@@ -50,14 +50,15 @@ def search_grid(X, y):
 
 def predict_outcome(X, y, X_test):
 	y = list(y)
-	est = linear_model.Lasso(alpha = np.power(10.,-3.24))
-	for i in range(50):
+	est = linear_model.Lasso(alpha = np.power(10.,-3.2))
+	for i in range(20):
 		est.fit(X,y)
 		y_test = est.predict(X)
 		li = [np.absolute(y[o]-y_test[o]) for o in range(len(y))]
 		ii = li.index(max(li))
 		del X[ii]
 		del y[ii]
+	est.fit(X,y)
 	y_test = est.predict(X)
 	plt.scatter(y, y_test)
 	plt.show()
@@ -203,10 +204,40 @@ ids = df_test['Id']				# test ids for later
 y = np.log(df_train['SalePrice'].tolist())		#y is training prices # log is better for this problem
 del df_train['SalePrice']
 df = df_train.append(df_test)
+df.loc[df['YearRemodAdd'] != df['YearBuilt'], 'YearRemodAdd'] = 0
+df.loc[df['YearRemodAdd'] == df['YearBuilt'], 'YearRemodAdd'] = 1
+conds = ['Ex', 'Gd', 'TA', 'Fa', 'Po']
+for i in range(len(conds)):
+	df.loc[df['ExterQual']==conds[i], 'ExterQual'] = len(conds)-i-1
+	df.loc[df['ExterCond']==conds[i], 'ExterCond'] = len(conds)-i-1
+	df.loc[df['BsmtQual'] == conds[i], 'BsmtQual'] = len(conds)-i
+	df.loc[df['BsmtCond'] == conds[i], 'BsmtCond'] = len(conds)-i
+	df.loc[df['HeatingQC']==conds[i], 'HeatingQC'] = len(conds)-i-1
+	df.loc[df['KitchenQual']==conds[i], 'KitchenQual'] = len(conds)-i-1
+	df.loc[df['FireplaceQu']==conds[i], 'FireplaceQu'] = len(conds)-i
+	df.loc[df['GarageQual']==conds[i], 'GarageQual'] = len(conds)-i-1
+	df.loc[df['GarageCond']==conds[i], 'GarageCond'] = len(conds)-i-1
+
+
+df.ExterCond.fillna(df['ExterCond'].mean(), inplace=True)
+df.ExterQual.fillna(df['ExterQual'].mean(), inplace=True)
+df.BsmtQual.fillna(0, inplace=True)
+df.BsmtCond.fillna(0, inplace=True)
+df.HeatingQC.fillna(df['HeatingQC'].mean(), inplace=True)
+df.KitchenQual.fillna(df['KitchenQual'].mean(), inplace=True)
+df.FireplaceQu.fillna(0, inplace=True)
+df.GarageQual.fillna(0, inplace=True)
+df.GarageCond.fillna(0, inplace=True)
+
+
+df.loc[df['CentralAir'] == 'Y', 'CentralAir'] = 1
+df.loc[df['CentralAir'] == 'N', 'CentralAir'] = 0
+df.CentralAir.fillna(0.5, inplace=True)
+
 
 df.LotFrontage.fillna(0, inplace=True)	#nans here are most likely zeros (from no frontage)
 # replace most categorical variables
-columns_cat = ['MSSubClass', 'MSZoning', 'Street', 'Alley', 'LotShape', 'LandContour', 'Utilities', 'LotConfig', 'LandSlope', 'Neighborhood', 'Condition1', 'Condition2', 'BldgType', 'HouseStyle', 'RoofStyle', 'RoofMatl', 'Exterior1st', 'Exterior2nd', 'ExterQual', 'ExterCond', 'Foundation', 'BsmtQual', 'BsmtCond', 'BsmtExposure', 'BsmtFinType1', 'BsmtFinType2', 'Heating', 'HeatingQC', 'CentralAir', 'Electrical', 'KitchenQual', 'Functional', 'FireplaceQu', 'GarageType', 'GarageFinish', 'GarageQual', 'GarageCond', 'PavedDrive', 'PoolQC', 'Fence', 'MiscFeature', 'SaleType', 'SaleCondition']
+columns_cat = ['MSSubClass', 'MSZoning', 'Street', 'Alley', 'LotShape', 'LandContour', 'Utilities', 'LotConfig', 'LandSlope', 'Neighborhood', 'Condition1', 'Condition2', 'BldgType', 'HouseStyle', 'RoofStyle', 'RoofMatl', 'Exterior1st', 'Exterior2nd', 'Foundation', 'BsmtExposure', 'BsmtFinType1', 'BsmtFinType2', 'Heating', 'Electrical', 'Functional', 'GarageType', 'GarageFinish', 'PavedDrive', 'PoolQC', 'Fence', 'MiscFeature', 'SaleType', 'SaleCondition']
 df = pd.concat([df, pd.get_dummies(df[columns_cat])],axis = 1)
 for c in columns_cat:	#delete categorical variables since we have dummies now
 	del df[c]
