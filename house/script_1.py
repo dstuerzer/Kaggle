@@ -49,6 +49,25 @@ def search_grid(X, y):
 	plt.show()
 
 def predict_outcome(X, y, X_test):
+	y = list(y)
+	est = linear_model.Lasso(alpha = np.power(10.,-3.24))
+	for i in range(50):
+		est.fit(X,y)
+		y_test = est.predict(X)
+		li = [np.absolute(y[o]-y_test[o]) for o in range(len(y))]
+		ii = li.index(max(li))
+		del X[ii]
+		del y[ii]
+	y_test = est.predict(X)
+	plt.scatter(y, y_test)
+	plt.show()
+	est.fit(X,y)
+	sc = cross_val_score(est, X, y, cv=10, scoring = 'neg_mean_squared_error')
+	print("CV = {}".format(np.sqrt(-np.mean(sc))))
+	y_pred = np.exp(est.predict(X_test))
+	write_output(ids, y_pred)
+
+def predict_outcome_2(X, y, X_test):
 	est = linear_model.Lasso(alpha = np.power(10.,-3.24))
 	# est = svm.SVR(kernel='linear', C = np.power(10.,-3.38))
 	# est = LinearRegression()
@@ -111,32 +130,6 @@ def important_features_lasso(X,y,cols):
 	ax2.set_title('The {} most important - features w Lasso'.format(eo))
 	plt.show()
 
-def stat_analysis(df_train):
-
-	cont_column = 'YrSold'
-	df_analysis = (df_train.loc[:, [cont_column, 'SalePrice']]).dropna(how='any')
-
-	df_analysis = df_analysis.sort_values(by = 'SalePrice', ascending = True)
-	x_plt = df_analysis['SalePrice'].tolist()
-	no_bins = 8
-	bins = np.arange(np.min(x_plt)-0.1, np.max(x_plt)+0.1, (np.max(x_plt)-np.min(x_plt))/no_bins)
-	group_names = range(1, len(bins))
-	print(bins)
-	df_analysis['cut'] = pd.cut(df_analysis['SalePrice'], bins, labels=group_names)
-	print(df_analysis.head(4))
-	x_plt = df_analysis['cut'].tolist()
-	yps = []
-	for g in group_names:
-		yps.append(df_analysis.loc[df_analysis['cut'] == g, cont_column].tolist())
-	# print(yps)
-	y_plt = df_analysis[cont_column].tolist()
-	y_plt = np.square(y_plt)
-	# print(np.mean(y_plt))
-	plt.boxplot(yps, labels=group_names, showfliers = False)
-
-	# plt.scatter(x_plt, y_plt)
-	plt.title(cont_column)
-	plt.show()
 
 def lasso_bootstrap(df_train, y, df_test):
 	print(len(df_train.columns.tolist()))
@@ -167,7 +160,39 @@ ids = df_test['Id']				# test ids for later
 # analysis of data #
 ####################
 
-# stat_analysis(df_train)
+
+# cont_column = 'LotArea'
+# df_analysis = (df_train.loc[:, [cont_column, 'SalePrice']]).dropna(how='any')
+
+# df_analysis = df_analysis.sort_values(by = 'SalePrice', ascending = True)
+# x_plt = df_analysis['SalePrice'].tolist()
+# no_bins = 8
+# bins = np.arange(np.min(x_plt)-0.1, np.max(x_plt)+0.1, (np.max(x_plt)-np.min(x_plt))/no_bins)
+# group_names = range(1, len(bins))
+# print(bins)
+# df_analysis['cut'] = pd.cut(df_analysis['SalePrice'], bins, labels=group_names)
+# print(df_analysis.head(4))
+# x_plt = df_analysis['cut'].tolist()
+# yps = []
+# for g in group_names:
+# 	yps.append(df_analysis.loc[df_analysis['cut'] == g, cont_column].tolist())
+# # print(yps)
+# y_plt = df_analysis[cont_column].tolist()
+# y_plt = np.square(y_plt)
+# # print(np.mean(y_plt))
+# plt.boxplot(yps, labels=group_names, showfliers = False)
+
+# # plt.scatter(x_plt, y_plt)
+# plt.title(cont_column)
+# plt.show()
+
+
+
+
+
+
+
+
 
 ##########################
 # prep for learning pt 1 #
@@ -202,28 +227,8 @@ df.MasVnrArea.fillna(df['MasVnrArea'].mean(), inplace=True)
 pd.concat([df, pd.get_dummies(df['MasVnrType'])],axis = 1)
 del df['MasVnrType']
 del df['GarageYrBlt']
-##########################################
-# consequences from preliminary analysis #
-##########################################
-del df['1stFlrSF']
-del df['2ndFlrSF']
-df['OverallQual'] = np.sqrt(10.-df['OverallQual'])
-
-
-##########################
-# prep for learning pt 2 #
-##########################
-
-#columns of CATEGORICAL VARIABLES
-
-
 
 df = df.fillna(value=0)		#very few values are still nan's - just get rid of them (they are in 3 prediction datasets
-
-# # AREAS are better taken linearly?
-# list_areas = ['LotArea', 'MasVnrArea', 'BsmtFinSF1', 'BsmtFinSF2', 'BsmtUnfSF', 'GarageArea', 'WoodDeckSF', 'OpenPorchSF', 'PoolArea', 'TotalBsmtSF', 'LowQualFinSF', 'GrLivArea']
-# for ar in list_areas:
-# 	df[ar] = np.sqrt(df[ar])
 
 #split everything back into training and testing set
 df_train = df.iloc[0:1460,:]
@@ -242,4 +247,4 @@ X_test = df_test.values.tolist()
 # X, X_test = rescale(X, X_test)
 # search_grid(X, y)
 predict_outcome(X, y, X_test)
-lasso_bootstrap(df_train, y, df_test)
+# lasso_bootstrap(df_train, y, df_test)
