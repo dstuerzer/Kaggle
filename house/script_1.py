@@ -47,7 +47,12 @@ def search_grid(X, y):
 		yy.append(np.sqrt(-np.mean(sc)))
 	plt.plot(xx,yy)
 	plt.show()
-
+def manual_t(y):
+	A = [[np.power(12.2,3), np.power(12.2,2), 12.2, 1],[3*np.power(12.2,2), 2*12.2, 1, 0],[np.power(10.5,3), np.power(10.5,2), 10.5, 1],[np.power(13.5,3), np.power(13.5,2), 13.5, 1]]
+	b = [12.2, 1, 10.3, 13.7]
+	c = np.linalg.solve(A,b)
+	return c[0]*np.power(y,3) + c[1]*np.power(y,2) + c[2]*y+c[3]
+	
 def predict_outcome(X, y, X_test):
 	y = list(y)
 	est = linear_model.Lasso(alpha = np.power(10.,-3.2))
@@ -59,17 +64,23 @@ def predict_outcome(X, y, X_test):
 		del X[ii]
 		del y[ii]
 	est.fit(X,y)
-	y_test = est.predict(X)
-	plt.scatter(y, y_test)
-	plt.show()
-	est.fit(X,y)
+	# plt.scatter(y, y_2, lw = 0)
+	# plt.plot([np.min(y), np.max(y)], [np.min(y), np.max(y)], color = 'red')
+	# plt.show()
+	# plt.scatter(y, y_3, lw = 0)
+	# plt.plot([np.min(y), np.max(y)], [np.min(y), np.max(y)], color = 'red')
+	# plt.show()
 	sc = cross_val_score(est, X, y, cv=10, scoring = 'neg_mean_squared_error')
 	print("CV = {}".format(np.sqrt(-np.mean(sc))))
-	y_pred = np.exp(est.predict(X_test))
+	y_2 = est.predict(X_test)
+	y_3 = []
+	for ka in y_2:
+		y_3.append(manual_t(ka))
+	y_pred = np.exp(y_3)
 	write_output(ids, y_pred)
 
 def predict_outcome_2(X, y, X_test):
-	est = linear_model.Lasso(alpha = np.power(10.,-3.24))
+	est = linear_model.Lasso(alpha = np.power(10.,-3.24),max_iter=50000)
 	# est = svm.SVR(kernel='linear', C = np.power(10.,-3.38))
 	# est = LinearRegression()
 	# est = svm.SVR(kernel = 'poly', degree = 2)
@@ -83,6 +94,10 @@ def predict_outcome_2(X, y, X_test):
 	sc = cross_val_score(est, X, y, cv=10, scoring = 'neg_mean_squared_error')
 	print("CV = {}".format(np.sqrt(-np.mean(sc))))
 	est.fit(X,y)
+	y_2 = est.predict(X)
+	plt.scatter(y, y_2, lw = 0)
+	plt.plot([np.min(y), np.max(y)], [np.min(y), np.max(y)], color = 'red')
+	plt.show()
 	y_pred = np.exp(est.predict(X_test))
 	write_output(ids, y_pred)
 
@@ -232,8 +247,7 @@ df.GarageCond.fillna(0, inplace=True)
 
 df.loc[df['CentralAir'] == 'Y', 'CentralAir'] = 1
 df.loc[df['CentralAir'] == 'N', 'CentralAir'] = 0
-df.CentralAir.fillna(0.5, inplace=True)
-
+df.CentralAir.fillna(df['CentralAir'].mean(), inplace=True)
 
 df.LotFrontage.fillna(0, inplace=True)	#nans here are most likely zeros (from no frontage)
 # replace most categorical variables
@@ -257,16 +271,31 @@ df.loc[pd.isnull(df['MasVnrType']), 'MasVnrType']  = 'None'
 df.MasVnrArea.fillna(df['MasVnrArea'].mean(), inplace=True) 
 pd.concat([df, pd.get_dummies(df['MasVnrType'])],axis = 1)
 del df['MasVnrType']
-del df['GarageYrBlt']
 
 df = df.fillna(value=0)		#very few values are still nan's - just get rid of them (they are in 3 prediction datasets
 
 #split everything back into training and testing set
+
+
 df_train = df.iloc[0:1460,:]
 df_test = df.iloc[1460:, :]
-
 X = df_train.values.tolist()
 X_test = df_test.values.tolist()
+
+inde = list(range(1460))
+random.shuffle(inde)
+yy = y[inde]
+XX = []
+for j in inde:
+	XX.append(X[j])
+
+XX_train = XX[:1000]
+yy_train = yy[:1000]
+XX_test = XX[1000:]
+yy_test = yy[1000:]
+
+
+
 
 
 
