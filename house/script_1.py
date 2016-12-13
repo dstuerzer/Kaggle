@@ -15,7 +15,7 @@ from sklearn.linear_model import LinearRegression, BayesianRidge, Lasso, Elastic
 from sklearn.neural_network import MLPClassifier, MLPRegressor
 from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
 from sklearn.kernel_ridge import KernelRidge
-from sklearn.ensemble import RandomForestRegressor, RandomForestClassifier
+from sklearn.ensemble import RandomForestRegressor, RandomForestClassifier, GradientBoostingRegressor
 import csv
 from sklearn import metrics
 
@@ -39,9 +39,9 @@ def write_output(ids, y_pred):
 def search_grid(X, y):
 	xx = []
 	yy = []
-	for k in np.arange(-3.4,-3,0.04):
-		est = linear_model.Lasso(alpha = np.power(10.,k))
-		sc = cross_val_score(est, X, y, cv=5, scoring = 'neg_mean_squared_error')
+	for k in np.arange(-7,-2, 0.5):
+		est = RandomForestRegressor(max_depth = 15, min_impurity_split = np.power(10., k))
+		sc = cross_val_score(est, X, y, cv=20, scoring = 'neg_mean_squared_error')
 		print("CV = {}".format(np.sqrt(-np.mean(sc))))
 		xx.append(k)
 		yy.append(np.sqrt(-np.mean(sc)))
@@ -49,27 +49,21 @@ def search_grid(X, y):
 	plt.show()
 def manual_t(y):
 	A = [[np.power(12.2,3), np.power(12.2,2), 12.2, 1],[3*np.power(12.2,2), 2*12.2, 1, 0],[np.power(10.5,3), np.power(10.5,2), 10.5, 1],[np.power(13.5,3), np.power(13.5,2), 13.5, 1]]
-	b = [12.2, 1, 10.3, 13.7]
+	b = [12.2, 1, 10.65, 13.35]
 	c = np.linalg.solve(A,b)
 	return c[0]*np.power(y,3) + c[1]*np.power(y,2) + c[2]*y+c[3]
 	
 def predict_outcome(X, y, X_test):
 	y = list(y)
 	est = linear_model.Lasso(alpha = np.power(10.,-3.2))
-	for i in range(20):
-		est.fit(X,y)
-		y_test = est.predict(X)
-		li = [np.absolute(y[o]-y_test[o]) for o in range(len(y))]
-		ii = li.index(max(li))
-		del X[ii]
-		del y[ii]
+	# for i in range(10):
+	# 	est.fit(X,y)
+	# 	y_test = est.predict(X)
+	# 	li = [np.absolute(y[o]-y_test[o]) for o in range(len(y))]
+	# 	ii = li.index(max(li))
+	# 	del X[ii]
+	# 	del y[ii]
 	est.fit(X,y)
-	# plt.scatter(y, y_2, lw = 0)
-	# plt.plot([np.min(y), np.max(y)], [np.min(y), np.max(y)], color = 'red')
-	# plt.show()
-	# plt.scatter(y, y_3, lw = 0)
-	# plt.plot([np.min(y), np.max(y)], [np.min(y), np.max(y)], color = 'red')
-	# plt.show()
 	sc = cross_val_score(est, X, y, cv=10, scoring = 'neg_mean_squared_error')
 	print("CV = {}".format(np.sqrt(-np.mean(sc))))
 	y_2 = est.predict(X_test)
@@ -79,73 +73,27 @@ def predict_outcome(X, y, X_test):
 	y_pred = np.exp(y_3)
 	write_output(ids, y_pred)
 
-def predict_outcome_2(X, y, X_test):
-	est = linear_model.Lasso(alpha = np.power(10.,-3.24),max_iter=50000)
-	# est = svm.SVR(kernel='linear', C = np.power(10.,-3.38))
-	# est = LinearRegression()
-	# est = svm.SVR(kernel = 'poly', degree = 2)
-	# est = MLPRegressor(solver='lbfgs', alpha=1e-5, hidden_layer_sizes=(10,))
-	# est = linear_model.Ridge(alpha = 0.1)
-	# est = KernelRidge()
-	# est = tree.DecisionTreeRegressor()
-	# est = BayesianRidge(n_iter = 300)
-	# est = RandomForestRegressor()
 
-	sc = cross_val_score(est, X, y, cv=10, scoring = 'neg_mean_squared_error')
-	print("CV = {}".format(np.sqrt(-np.mean(sc))))
-	est.fit(X,y)
-	y_2 = est.predict(X)
-	plt.scatter(y, y_2, lw = 0)
-	plt.plot([np.min(y), np.max(y)], [np.min(y), np.max(y)], color = 'red')
-	plt.show()
-	y_pred = np.exp(est.predict(X_test))
-	write_output(ids, y_pred)
-
-def important_features_rfr(X,y,cols):
-	est = RandomForestRegressor(400)
-	est.fit(X,y)
-	feat_import = est.feature_importances_ 
-	daten = {'feat_imp': feat_import, 'names': cols}
-	cols = ['feat_imp', 'names']
-
-	df = pd.DataFrame(daten, columns = cols)
-	df = df.sort_values(by = 'feat_imp', ascending = False)
-	print(df.head(10))
-	x = df['names'].tolist()
-	y = df['feat_imp'].tolist()
-	plt.xticks(rotation=-30)
-	eo = 20
-	plt.bar(range(len(x[:eo])), y[:eo], align='edge', width = -0.9, linewidth = 0)
-	plt.xticks(range(len(x[:eo])), x[:eo])
-	plt.title('The {} most important features w RandomForests'.format(eo))
-	plt.show()
-
-def important_features_lasso(X,y,cols):
-	est = linear_model.Lasso(alpha = np.power(10.,-3.24))
-	est.fit(X,y)
-
-	feat_import = est.coef_ 
-	daten = {'feat_imp': feat_import, 'names': cols}
-	cols = ['feat_imp', 'names']
-
-	df = pd.DataFrame(daten, columns = cols)
-	df = df.sort_values(by = 'feat_imp', ascending = False)
-	print(df.head(10))
-	x = df['names'].tolist()
-	y = df['feat_imp'].tolist()
-	f, (ax1, ax2) = plt.subplots(1,2)#, sharey=True, sharex=True)
-	eo = 20
-	ax1.bar(range(len(x[:eo])), y[:eo], align='center', width = 0.9, linewidth = 0)
-	ax1.set_xticks(range(len(x[:eo])))
-	ax1.set_xticklabels(x[:eo], rotation = -90)
-	ax1.set_title('The {} most important + features w Lasso'.format(eo))
-
-	ax2.bar(range(len(x[-eo:])), y[-eo:], align='center', width = -0.9, linewidth = 0)
-	ax2.set_xticks(range(len(x[-eo:])))
-	ax2.set_xticklabels(x[-eo:], rotation = -90)
-	ax2.set_title('The {} most important - features w Lasso'.format(eo))
-	plt.show()
-
+def important_features_rfr(df_train, df_test, y):
+	df_0 = df_train.copy()
+	df_1 = df_test.copy()
+	print(df_0.shape)
+	for i in range(10):
+		X = df_0.values.tolist()
+		est = RandomForestRegressor(max_depth = 20, min_impurity_split = np.power(10., -3.5))
+		est.fit(X,y)
+		cols = df_0.columns
+		feat_import = est.feature_importances_ 
+		daten = {'feat_imp': feat_import, 'names': cols}
+		cols = ['feat_imp', 'names']
+		df = pd.DataFrame(daten, columns = cols)
+		df = df.sort_values(by = 'feat_imp', ascending = False)
+		dropped = df.loc[df['feat_imp'] <1e-06, 'names'].tolist()
+		print(dropped)
+		df_0 = df_0.drop(dropped, axis=1)
+		df_1 = df_1.drop(dropped, axis=1)
+		print("new dimensions", df_0.shape)
+	return df_0, df_1
 
 def lasso_bootstrap(df_train, y, df_test):
 	print(len(df_train.columns.tolist()))
@@ -172,39 +120,28 @@ df_train = pd.read_csv("train.csv")
 df_test = pd.read_csv('test.csv')
 ids = df_test['Id']				# test ids for later
 
-####################
-# analysis of data #
-####################
 
 
-# cont_column = 'LotArea'
-# df_analysis = (df_train.loc[:, [cont_column, 'SalePrice']]).dropna(how='any')
-
-# df_analysis = df_analysis.sort_values(by = 'SalePrice', ascending = True)
-# x_plt = df_analysis['SalePrice'].tolist()
-# no_bins = 8
-# bins = np.arange(np.min(x_plt)-0.1, np.max(x_plt)+0.1, (np.max(x_plt)-np.min(x_plt))/no_bins)
-# group_names = range(1, len(bins))
-# print(bins)
-# df_analysis['cut'] = pd.cut(df_analysis['SalePrice'], bins, labels=group_names)
-# print(df_analysis.head(4))
-# x_plt = df_analysis['cut'].tolist()
-# yps = []
-# for g in group_names:
-# 	yps.append(df_analysis.loc[df_analysis['cut'] == g, cont_column].tolist())
-# # print(yps)
-# y_plt = df_analysis[cont_column].tolist()
-# y_plt = np.square(y_plt)
-# # print(np.mean(y_plt))
-# plt.boxplot(yps, labels=group_names, showfliers = False)
-
-# # plt.scatter(x_plt, y_plt)
-# plt.title(cont_column)
-# plt.show()
-
-
-
-
+def prdict(X, y, X_test):
+	est = GradientBoostingRegressor()
+	est.fit(X, y)
+	sc = cross_val_score(est, X, y, cv=10, scoring = 'neg_mean_squared_error')
+	print("CV = {}".format(np.sqrt(-np.mean(sc))))
+	y_0 = est.predict(X)
+	y_pred = est.predict(X_test)
+	plt.scatter(y, y_0, lw = 0)
+	plt.plot([np.min(y), np.max(y)], [np.min(y), np.max(y)], color = 'red')
+	x = np.arange(np.min(y), np.max(y), 0.1)
+	z = []
+	for k in x:
+		z.append(manual_t(k))
+	plt.plot(x,z,color = 'green')
+	plt.show()
+	y_3 = []
+	for ka in y_pred:
+		y_3.append(manual_t(ka))
+	y_pred = np.exp(y_3)
+	write_output(ids, y_pred)
 
 
 
@@ -282,22 +219,11 @@ df_test = df.iloc[1460:, :]
 X = df_train.values.tolist()
 X_test = df_test.values.tolist()
 
-inde = list(range(1460))
-random.shuffle(inde)
-yy = y[inde]
-XX = []
-for j in inde:
-	XX.append(X[j])
 
-XX_train = XX[:1000]
-yy_train = yy[:1000]
-XX_test = XX[1000:]
-yy_test = yy[1000:]
+# df_0, df_1 = important_features_rfr(df_train, df_test, y)
 
-
-
-
-
+# X = df_0.values.tolist()
+# X_test = df_1.values.tolist()
 
 ############################
 ## prediction ##############
@@ -306,5 +232,6 @@ yy_test = yy[1000:]
 # important_features_lasso(X,y, df_train.columns.tolist())
 # X, X_test = rescale(X, X_test)
 # search_grid(X, y)
-predict_outcome(X, y, X_test)
+# predict_outcome(X, y, X_test)
+prdict(X,y,X_test)
 # lasso_bootstrap(df_train, y, df_test)
