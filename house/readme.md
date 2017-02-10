@@ -1,0 +1,1 @@
+The Jupyter Notebook contains a description of the code submitted to the Kaggle competition "House Prices: Advanced Regression Techniques". In Dec 2016 my results where in the top 16% of the leaderboard.
