@@ -4,6 +4,7 @@ import matplotlib.pyplot as plt
 from sklearn.svm import SVC
 from sklearn.neural_network import MLPClassifier
 from sklearn.ensemble import RandomForestClassifier
+import xgboost as xgb
 
 #import count_days as cd
 
@@ -74,7 +75,7 @@ def create_training_set(x, L):
     for j in range(len(x)-L):
         X.append(x[j:j+L])
         y.append(x[j+L])
-    return X, y
+    return np.array(X), np.array(y)
     
     
 def soft(x):
@@ -103,8 +104,8 @@ del df['Time']
 
 df = df[df['Eclipse Type'].str[0] != 'P']     #exclude partial eclipses
 ##possibly exclude data prior to date
-date_start = date_to_jd([1800, 1, 1, 0, 0, 0])   #only use data after this date
-df = df[df['Time JD'] > date_start]
+#date_start = date_to_jd([1800, 1, 1, 0, 0, 0])   #only use data after this date
+#df = df[df['Time JD'] > date_start]
 
 t_between = df['Time JD'].diff().tolist()   #count days between consecutive eclipses
 t_between = t_between[1:-1] #time (days) between consecutive eclipses
@@ -133,7 +134,7 @@ dates_after = df_after['Time JD'].tolist()
 diff_before = [j for j in t_between[:len(dates_before)-1]]  #recorded differences between past ecl.
 diff_after =  [j for j in t_between[len(dates_before)-1:]]   #differences betw. future ecl. 2b predicted
 
-L = len(diff_before)//20    #every eclipse is predicted from the past L eclipses
+L = len(diff_before)//82    #every eclipse is predicted from the past L eclipses
 print(L)
 
 X, y = create_training_set(diff_before, L) #initialize training set
@@ -148,8 +149,11 @@ y_train = y[:int((1-p)*len(y))]
 print('training set created')
 # learning algorithm
 #lrn = MLPClassifier(solver='lbfgs', alpha=1e-5, hidden_layer_sizes=(20,20,20), learning_rate = 'adaptive')
-lrn = SVC(kernel = 'linear', C=1)
+#lrn = SVC(kernel = 'linear', C=1)
 #lrn = RandomForestClassifier(100)
+lrn = xgb.XGBClassifier(learning_rate = 0.05, max_depth = 10, objective = "reg:linear")
+
+
 lrn.fit(X_train, y_train)
 print('MLA fitted')
 
@@ -165,7 +169,7 @@ for i in range(len(y_val)):
             c1+=1
 
 #print("Validation Error at {}%".format((c0*100)//len(y_val)))
-print("\nPredictions at most one day off: {}%".format((c1*100)//len(y_val)))
+print("\nPredictions at most one day off: {}%".format(((c1*1000)//len(y_val))/10))
 print("Tested on {} samples".format(len(y_val)))
 print("\n\n")
 ##################################################
@@ -173,7 +177,7 @@ print("\n\n")
 ##################################################
 
 
-N_future = 5   #number of predictions into the future
+N_future = 15   #number of predictions into the future
 
 # optionally train the model again on the 'entire' past 
 lrn.fit(X, y)
